@@ -2,7 +2,9 @@ const express = require('express')
 const httpProxy = require('http-proxy')
 
 const app = express()
-const PORT = 8000
+
+// 🔥 IMPORTANT (for Render / cloud)
+const PORT = process.env.PORT || 8000
 
 const BASE_PATH = 'https://vercel-clone-myproject.s3.eu-north-1.amazonaws.com/__outputs'
 
@@ -11,6 +13,7 @@ const proxy = httpProxy.createProxy()
 app.use((req, res) => {
     const hostname = req.hostname
 
+    // 🧠 LOCAL REDIRECT (for localhost dev)
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
         if (req.path === '/favicon.ico') {
             return res.sendStatus(204)
@@ -22,25 +25,25 @@ app.use((req, res) => {
         }
 
         const path = restPath.length > 0 ? `/${restPath.join('/')}` : '/'
-        const query = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
-        return res.redirect(302, `http://${projectSlug}.localhost:${PORT}${path}${query}`)
+        return res.redirect(302, `http://${projectSlug}.localhost:${PORT}${path}`)
     }
 
+    // 🌍 PRODUCTION SUBDOMAIN
     const subdomain = hostname.split('.')[0]
 
-    // Custom Domain - DB Query
+    let path = req.url
 
-    const resolvesTo = `${BASE_PATH}/${subdomain}`
+    // 👉 fix root path
+    if (path === '/' || path === '') {
+        path = '/index.html'
+    }
 
-    return proxy.web(req, res, { target: resolvesTo, changeOrigin: true })
+    const target = `${BASE_PATH}/${subdomain}${path}`
 
-})
-
-proxy.on('proxyReq', (proxyReq, req, res) => {
-    const url = req.url;
-    if (url === '/')
-        proxyReq.path += 'index.html'
-
+    return proxy.web(req, res, {
+        target,
+        changeOrigin: true
+    })
 })
 
 proxy.on('error', (error, req, res) => {
@@ -49,4 +52,4 @@ proxy.on('error', (error, req, res) => {
     }
 })
 
-app.listen(PORT, () => console.log(`Reverse Proxy Running..${PORT}`))
+app.listen(PORT, () => console.log(`🚀 Proxy Running on ${PORT}`))
