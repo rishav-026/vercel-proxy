@@ -2,9 +2,9 @@ const express = require('express')
 const httpProxy = require('http-proxy')
 
 const app = express()
-const PORT = 8000
+const PORT = Number(process.env.PORT || 8000)
 
-const BASE_PATH = 'https://vercel-clone-myproject.s3.eu-north-1.amazonaws.com/__outputs'
+const BASE_PATH = process.env.S3_OUTPUTS_BASE_PATH || 'https://vercel-clone-myproject.s3.eu-north-1.amazonaws.com/__outputs'
 
 const proxy = httpProxy.createProxy()
 
@@ -23,7 +23,7 @@ app.use((req, res) => {
 
         const path = restPath.length > 0 ? `/${restPath.join('/')}` : '/'
         const query = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : ''
-        return res.redirect(302, `http://${projectSlug}.localhost:${PORT}${path}${query}`)
+        return res.redirect(302, `http://${projectSlug}.localhost:8000${path}${query}`)
     }
 
     const subdomain = hostname.split('.')[0]
